@@ -67,13 +67,42 @@
   const metaTargetDims = document.getElementById('metaTargetDims');
   const toast = document.getElementById('toast');
 
-  // --- Engine & State ---
+  // Engine & State
   const enhancer = new ImageEnhancerEngine();
   let currentImage = null;
   let currentFileName = 'super-lens-vector';
   let currentSvgString = null;
+  let hasPythonBackend = false;
 
-  // Zoom & Pan state
+  // Check if running on local Python server
+  async function checkPythonBackend() {
+    try {
+      const res = await fetch('/api/ping');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'ok') {
+          hasPythonBackend = true;
+          window.hasPythonBackend = true;
+          const badge = document.getElementById('pythonEngineBadge');
+          if (badge) badge.classList.remove('hidden');
+          console.log('[Super Lens] Connected to local Python vectorizer engine.');
+        }
+      }
+    } catch (e) {
+      hasPythonBackend = false;
+    }
+  }
+
+  function init() {
+    checkPythonBackend();
+    setupUploadHandlers();
+    setupComparisonSlider();
+    setupZoomAndPan();
+    setupViewModeToggles();
+    setupQualitySliders();
+    setupExportHandlers();
+    setupSampleImages();
+  }
   let zoom = 1;
   let panX = 0;
   let panY = 0;

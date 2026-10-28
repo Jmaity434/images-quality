@@ -70,11 +70,36 @@ class ImageEnhancerEngine {
     };
 
     let svgString = "";
-    if (window.ImageTracer && typeof window.ImageTracer.imagedataToSVG === 'function') {
-      svgString = window.ImageTracer.imagedataToSVG(imgData, tracerOptions);
-    } else {
-      // Fallback SVG generator if ImageTracer is not yet loaded
-      svgString = this._fallbackVectorize(imgData, origW, origH);
+
+    // If local Python server is available, use Python OpenCV vectorizer
+    if (window.hasPythonBackend) {
+      try {
+        const res = await fetch('/api/vectorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: canvas.toDataURL('image/png'),
+            colors: numColors,
+            smooth: 1.0 + depixelAmt * 1.5
+          })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'success' && json.svg) {
+            svgString = json.svg;
+          }
+        }
+      } catch (err) {
+        console.warn('Python vectorizer fallback to in-browser engine:', err);
+      }
+    }
+
+    if (!svgString) {
+      if (window.ImageTracer && typeof window.ImageTracer.imagedataToSVG === 'function') {
+        svgString = window.ImageTracer.imagedataToSVG(imgData, tracerOptions);
+      } else {
+        svgString = this._fallbackVectorize(imgData, origW, origH);
+      }
     }
 
     this.cachedSvgString = svgString;

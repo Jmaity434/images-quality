@@ -47,27 +47,22 @@ Super Lens applies **Bezier contour vectorization**:
 
 ---
 
-## 🐍 Python Vectorizer Script (`vectorize.py`)
+## 🚀 Running Locally with Python Server
 
-Run offline on your PC to convert any image into pure SVG:
+Start the local Python server with the OpenCV vectorizer:
 
 ```bash
-# Basic usage:
-python vectorize.py my_image.png output.svg
-
-# Custom colors & smoothness:
-python vectorize.py my_image.png output.svg --colors 32 --smooth 1.5
+python server.py
 ```
+This automatically opens **`http://127.0.0.1:8080`** in your default browser with the active Python OpenCV backend.
 
 ---
 
-## 🔧 Running Web App Locally
+## 🐍 Standalone CLI Vectorizer (`vectorize.py`)
+
+Run offline from terminal:
 
 ```bash
-# Python 3:
-python -m http.server 8000
-
-# or Node.js:
-npx serve .
+# Basic usage:
+python vectorize.py input.png output.svg --colors 32 --smooth 1.5
 ```
-Visit: [http://localhost:8000](http://localhost:8000)
