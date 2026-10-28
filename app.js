@@ -1,6 +1,7 @@
 /**
- * SuperLens Real-Time Image Quality Extender
- * Application Controller: Uploads, Zoom/Pan Engine, Split-Slider, and Export.
+ * Super Lens - Application Controller
+ * Handles image upload, 60 FPS real-time rendering, zoom/pan engine,
+ * interactive split preview, and multi-format (PNG, JPG, WEBP, RAW) download.
  */
 
 (function () {
@@ -24,7 +25,7 @@
   const afterClipper = document.getElementById('afterClipper');
   const sliderHandle = document.getElementById('sliderHandle');
 
-  // Toolbar & View Buttons
+  // Toolbar Controls
   const splitModeBtn = document.getElementById('splitModeBtn');
   const sideModeBtn = document.getElementById('sideModeBtn');
   const holdOriginalBtn = document.getElementById('holdOriginalBtn');
@@ -34,7 +35,7 @@
   const zoom100Btn = document.getElementById('zoom100Btn');
   const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
 
-  // Controls & Sliders
+  // Extender Sliders
   const qualityExtenderSlider = document.getElementById('qualityExtenderSlider');
   const qualityPercentBadge = document.getElementById('qualityPercentBadge');
   const upscaleRadios = document.querySelectorAll('input[name="upscaleFactor"]');
@@ -42,7 +43,7 @@
   const fineTunePanel = document.getElementById('fineTunePanel');
   const chevronIcon = document.getElementById('chevronIcon');
 
-  // Fine tune inputs
+  // Fine-tune sliders
   const sliderDepixel = document.getElementById('sliderDepixel');
   const sliderSharpen = document.getElementById('sliderSharpen');
   const sliderClarity = document.getElementById('sliderClarity');
@@ -54,7 +55,7 @@
   const valDenoise = document.getElementById('valDenoise');
   const valVibrance = document.getElementById('valVibrance');
 
-  // Download & Metadata
+  // Export Settings
   const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
   const exportQualityRow = document.getElementById('exportQualityRow');
   const sliderExportQuality = document.getElementById('sliderExportQuality');
@@ -64,13 +65,12 @@
   const metaRatio = document.getElementById('metaRatio');
   const metaOrigDims = document.getElementById('metaOrigDims');
   const metaTargetDims = document.getElementById('metaTargetDims');
-  const metaSmoothness = document.getElementById('metaSmoothness');
   const toast = document.getElementById('toast');
 
   // --- Engine & State ---
   const enhancer = new ImageEnhancerEngine();
   let currentImage = null;
-  let currentFileName = 'enhanced-image';
+  let currentFileName = 'super-lens-image';
 
   // Zoom & Pan state
   let zoom = 1;
@@ -80,7 +80,7 @@
   let startPanX = 0;
   let startPanY = 0;
 
-  // Split slider state (0 to 100%)
+  // Split slider state
   let splitPercent = 50;
   let isDraggingSlider = false;
   let viewMode = 'split'; // 'split' | 'side'
@@ -90,10 +90,9 @@
   let exportFormat = 'png';
   let exportQuality = 0.98;
 
-  // Render loop throttle
+  // Render loop control
   let renderPending = false;
 
-  // --- Initialization ---
   function init() {
     setupUploadHandlers();
     setupComparisonSlider();
@@ -105,7 +104,7 @@
   }
 
   // =========================================================================
-  // 1. Upload & Image Ingestion (Preserving Exact Aspect Ratio)
+  // 1. Upload & Ingestion (Strict Aspect Ratio Preservation)
   // =========================================================================
   function setupUploadHandlers() {
     fileInput.addEventListener('change', (e) => {
@@ -117,7 +116,7 @@
       dropZone.addEventListener(eventName, (e) => {
         e.preventDefault();
         e.stopPropagation();
-        dropZone.querySelector('.dropzone-content').classList.add('dragover');
+        dropZone.querySelector('.dropzone-box').classList.add('dragover');
       });
     });
 
@@ -125,7 +124,7 @@
       dropZone.addEventListener(eventName, (e) => {
         e.preventDefault();
         e.stopPropagation();
-        dropZone.querySelector('.dropzone-content').classList.remove('dragover');
+        dropZone.querySelector('.dropzone-box').classList.remove('dragover');
       });
     });
 
@@ -135,7 +134,7 @@
       if (file && file.type.startsWith('image/')) {
         handleFile(file);
       } else {
-        showToast('অনুগ্রহ করে একটি ছবি ফাইল আপলোড করুন (JPG, PNG, WebP)');
+        showToast('Please upload a valid image file (JPG, PNG, WebP, BMP)');
       }
     });
 
@@ -168,20 +167,20 @@
     const origW = img.naturalWidth || img.width;
     const origH = img.naturalHeight || img.height;
 
-    // Strict Aspect Ratio Preservation
+    // Calculate Aspect Ratio
     const ratioString = ImageEnhancerEngine.getAspectRatio(origW, origH);
     metaRatio.textContent = ratioString;
     metaOrigDims.textContent = `${origW} × ${origH} px`;
 
-    // Render Original to "Before" Canvas (Nearest-neighbor scaling to show true pixels when zoomed)
+    // Render Raw Original to "Before" Canvas (No smoothing, clearly showing original pixels)
     beforeCanvas.width = origW;
     beforeCanvas.height = origH;
     const beforeCtx = beforeCanvas.getContext('2d');
-    beforeCtx.imageSmoothingEnabled = false; // preserve raw pixels so before/after contrast is crystal clear
+    beforeCtx.imageSmoothingEnabled = false;
     beforeCtx.clearRect(0, 0, origW, origH);
     beforeCtx.drawImage(img, 0, 0, origW, origH);
 
-    // Also populate side-by-side canvas
+    // Side-by-side canvas
     sideBeforeCanvas.width = origW;
     sideBeforeCanvas.height = origH;
     const sideBeforeCtx = sideBeforeCanvas.getContext('2d');
@@ -196,11 +195,11 @@
     // Reset zoom and fit to stage
     fitImageToScreen();
     requestEnhanceRender();
-    showToast(`ছবি সফলভাবে আপলোড হয়েছে (${origW}×${origH}, রেশিও ${ratioString})`);
+    showToast(`Image loaded: ${origW}×${origH} px (${ratioString})`);
   }
 
   // =========================================================================
-  // 2. Real-Time Image Quality Extender Rendering
+  // 2. Real-Time Super-Resolution Render Pipeline
   // =========================================================================
   function requestEnhanceRender() {
     if (renderPending) return;
@@ -223,27 +222,24 @@
       upscaleFactor: upscaleFactor
     };
 
-    // Render to After Canvas
     enhancer.renderToCanvas(afterCanvas, params);
 
-    // If Side-by-Side view is active, also update side canvas
     if (viewMode === 'side') {
       enhancer.renderToCanvas(sideAfterCanvas, params);
     }
 
-    // Update metadata info
     const origW = currentImage.naturalWidth || currentImage.width;
     const origH = currentImage.naturalHeight || currentImage.height;
-    const enhancedW = Math.round(origW * upscaleFactor);
-    const enhancedH = Math.round(origH * upscaleFactor);
-    metaTargetDims.textContent = `${enhancedW} × ${enhancedH} px (${upscaleFactor}× HD)`;
+    const targetW = Math.round(origW * upscaleFactor);
+    const targetH = Math.round(origH * upscaleFactor);
+    metaTargetDims.textContent = `${targetW} × ${targetH} px (${upscaleFactor}× HD)`;
 
-    // Update download button label
-    downloadBtnSub.textContent = `${exportFormat.toUpperCase()} • ${enhancedW}×${enhancedH} px • ১০০% রেশিও সংরক্ষিত`;
+    const extName = exportFormat === 'raw' ? 'RAW (TIFF)' : exportFormat.toUpperCase();
+    downloadBtnSub.textContent = `${extName} • ${targetW}×${targetH} px • 100% Aspect Ratio Preserved`;
   }
 
   // =========================================================================
-  // 3. Interactive Split Before/After Slider
+  // 3. Interactive Split Comparison Slider
   // =========================================================================
   function setupComparisonSlider() {
     function setSplit(percent) {
@@ -283,7 +279,6 @@
       window.addEventListener('touchend', onPointerUp);
     }, { passive: true });
 
-    // Initial split
     setSplit(50);
   }
 
@@ -298,10 +293,9 @@
 
     function setZoom(newZoom, centerX, centerY) {
       const prevZoom = zoom;
-      zoom = Math.max(0.2, Math.min(12, newZoom)); // Support up to 1200% zoom to scrutinize pixels
+      zoom = Math.max(0.2, Math.min(12, newZoom)); // Up to 1200% zoom
 
       if (centerX !== undefined && centerY !== undefined) {
-        // Zoom towards mouse position
         const rect = stageContainer.getBoundingClientRect();
         const mouseX = centerX - rect.left - rect.width / 2;
         const mouseY = centerY - rect.top - rect.height / 2;
@@ -313,16 +307,13 @@
       applyTransform();
     }
 
-    // Mouse wheel zoom
     stageContainer.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
       setZoom(zoom * zoomFactor, e.clientX, e.clientY);
     }, { passive: false });
 
-    // Pan via Mouse Drag
     stageContainer.addEventListener('mousedown', (e) => {
-      // Don't pan if clicking the slider handle
       if (e.target.closest('#sliderHandle')) return;
       isPanning = true;
       startPanX = e.clientX - panX;
@@ -344,7 +335,7 @@
       }
     });
 
-    // Touch Pinch-to-Zoom & Pan
+    // Touch controls
     let initialTouchDist = null;
     let initialTouchZoom = zoom;
 
@@ -386,7 +377,6 @@
       initialTouchDist = null;
     });
 
-    // Zoom Buttons
     zoomInBtn.addEventListener('click', () => setZoom(zoom * 1.3));
     zoomOutBtn.addEventListener('click', () => setZoom(zoom / 1.3));
     zoomFitBtn.addEventListener('click', fitImageToScreen);
@@ -406,13 +396,12 @@
     const origW = currentImage.naturalWidth || currentImage.width;
     const origH = currentImage.naturalHeight || currentImage.height;
 
-    // Available space with 40px margin
     const availW = Math.max(200, stageRect.width - 60);
     const availH = Math.max(200, stageRect.height - 60);
 
     const scaleW = availW / origW;
     const scaleH = availH / origH;
-    zoom = Math.min(scaleW, scaleH, 1.0); // Fit completely within view
+    zoom = Math.min(scaleW, scaleH, 1.0);
     panX = 0;
     panY = 0;
 
@@ -440,7 +429,6 @@
       requestEnhanceRender();
     });
 
-    // Hold to view original (Quick Peek)
     function showOriginal() {
       afterClipper.style.opacity = '0';
     }
@@ -455,27 +443,25 @@
   }
 
   // =========================================================================
-  // 6. Quality Sliders & Automatic Harmonization
+  // 6. Quality Sliders & Harmonization for Zero-Pixel Output
   // =========================================================================
   function setupQualitySliders() {
-    // Master Quality Extender Slider (0% Low to 100% Ultra High)
     qualityExtenderSlider.addEventListener('input', (e) => {
       const val = parseInt(e.target.value, 10);
       qualityPercentBadge.textContent = `${val}%`;
 
-      // Automatically harmonize fine-tuning parameters to eliminate pixels and maximize quality
       const t = val / 100;
-      sliderDepixel.value = Math.round(20 + t * 75);      // 20% to 95%
-      sliderSharpen.value = Math.round(15 + t * 75);      // 15% to 90%
-      sliderClarity.value = Math.round(10 + t * 65);      // 10% to 75%
-      sliderDenoise.value = Math.round(20 + t * 65);      // 20% to 85%
-      sliderVibrance.value = Math.round(t * 40);          // 0% to 40%
+      // High baseline de-pixelation to ensure no pixelation remains
+      sliderDepixel.value = Math.round(30 + t * 65);       // 30% to 95%
+      sliderSharpen.value = Math.round(20 + t * 70);       // 20% to 90%
+      sliderClarity.value = Math.round(15 + t * 65);       // 15% to 80%
+      sliderDenoise.value = Math.round(30 + t * 60);       // 30% to 90%
+      sliderVibrance.value = Math.round(t * 40);           // 0% to 40%
 
       updateFineTuneValueDisplays();
       requestEnhanceRender();
     });
 
-    // Individual fine-tune sliders
     const fineSliders = [
       { el: sliderDepixel, valEl: valDepixel },
       { el: sliderSharpen, valEl: valSharpen },
@@ -499,13 +485,11 @@
       valVibrance.textContent = `${sliderVibrance.value}%`;
     }
 
-    // Toggle Collapsible Fine-Tune Panel
     toggleFineTuneBtn.addEventListener('click', () => {
       const isHidden = fineTunePanel.classList.toggle('hidden');
       chevronIcon.classList.toggle('open', !isHidden);
     });
 
-    // Upscale Factor Radios (1x, 2x, 4x)
     upscaleRadios.forEach(radio => {
       radio.addEventListener('change', (e) => {
         if (e.target.checked) {
@@ -517,7 +501,7 @@
   }
 
   // =========================================================================
-  // 7. Download & Export System (Preserves Aspect Ratio in Customer's Format)
+  // 7. Download & Export (PNG, JPG, WEBP, and RAW/TIFF)
   // =========================================================================
   function setupExportHandlers() {
     exportFormatRadios.forEach(radio => {
@@ -544,9 +528,8 @@
 
       try {
         downloadBtn.disabled = true;
-        downloadBtn.querySelector('.btn-title').textContent = 'তৈরি হচ্ছে... (Generating)';
+        downloadBtn.querySelector('.btn-title').textContent = 'Generating High-Res Export...';
 
-        // High-resolution canvas rendering for export
         const exportCanvas = document.createElement('canvas');
         const params = {
           depixel: parseFloat(sliderDepixel.value),
@@ -557,6 +540,7 @@
           upscaleFactor: upscaleFactor
         };
 
+        // Render full super-resolution onto export canvas
         enhancer.renderToCanvas(exportCanvas, params);
 
         const blob = await enhancer.exportImage(exportCanvas, exportFormat, exportQuality);
@@ -565,26 +549,27 @@
         const link = document.createElement('a');
         const w = exportCanvas.width;
         const h = exportCanvas.height;
-        link.download = `${currentFileName}-enhanced-${w}x${h}.${exportFormat}`;
+        const fileExt = exportFormat === 'raw' ? 'tiff' : exportFormat;
+        link.download = `${currentFileName}-superlens-${w}x${h}.${fileExt}`;
         link.href = url;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
 
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-        showToast(`ডাউনলোড সম্পন্ন হয়েছে! (${w}×${h} px, ${exportFormat.toUpperCase()})`);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        showToast(`Download ready: ${w}×${h} px (${fileExt.toUpperCase()})`);
       } catch (err) {
         console.error('Download error:', err);
-        showToast('ডাউনলোডে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।');
+        showToast('Error generating download. Please try again.');
       } finally {
         downloadBtn.disabled = false;
-        downloadBtn.querySelector('.btn-title').textContent = 'এনহ্যান্সড ছবি ডাউনলোড করুন';
+        downloadBtn.querySelector('.btn-title').textContent = 'Download Enhanced Image';
       }
     });
   }
 
   // =========================================================================
-  // 8. Built-in Sample Generator for Instant 1-Click Testing
+  // 8. Instant Sample Generators (SVG icons only, no emojis)
   // =========================================================================
   function setupSampleImages() {
     document.querySelectorAll('.sample-chip').forEach(chip => {
@@ -600,84 +585,82 @@
     const ctx = canvas.getContext('2d');
 
     if (type === 'pixelart') {
-      // Low-res pixel art sprite (shows severe pixelation that becomes smooth and crisp)
+      // 160x160 pixel art sprite with severe blockiness
       canvas.width = 160;
       canvas.height = 160;
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#2A2A2A';
       ctx.fillRect(0, 0, 160, 160);
 
-      // Draw game character face
-      ctx.fillStyle = '#f59e0b';
+      // Character shapes with sharp pixel steps
+      ctx.fillStyle = '#E10600';
       ctx.fillRect(40, 40, 80, 80);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(56, 56, 16, 20); // eyes
+      ctx.fillStyle = '#C0C0C0';
+      ctx.fillRect(56, 56, 16, 20);
       ctx.fillRect(88, 56, 16, 20);
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(60, 92, 40, 12); // mouth
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(40, 20, 80, 20); // cap
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(60, 92, 40, 12);
+      ctx.fillStyle = '#1c1c1c';
+      ctx.fillRect(40, 20, 80, 20);
     } else if (type === 'portrait') {
-      // Blurred artistic portrait shape
+      // Portrait gradient (360x480)
       canvas.width = 360;
       canvas.height = 480;
       const grad = ctx.createLinearGradient(0, 0, 360, 480);
-      grad.addColorStop(0, '#312e81');
-      grad.addColorStop(0.5, '#4c1d95');
-      grad.addColorStop(1, '#831843');
+      grad.addColorStop(0, '#2A2A2A');
+      grad.addColorStop(0.5, '#383838');
+      grad.addColorStop(1, '#1c1c1c');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 360, 480);
 
-      // Silhouette & glowing eyes
-      ctx.fillStyle = '#fbcfe8';
+      ctx.fillStyle = '#C0C0C0';
       ctx.beginPath();
       ctx.arc(180, 180, 80, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#be185d';
+      ctx.fillStyle = '#E10600';
       ctx.beginPath();
       ctx.arc(150, 170, 14, 0, Math.PI * 2);
       ctx.arc(210, 170, 14, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#9d174d';
+      ctx.strokeStyle = '#E10600';
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.arc(180, 205, 25, 0.2 * Math.PI, 0.8 * Math.PI);
       ctx.stroke();
     } else {
-      // Landscape (16:9 ratio)
+      // Landscape 16:9 (640x360)
       canvas.width = 640;
       canvas.height = 360;
-      // Sky
+
       const skyGrad = ctx.createLinearGradient(0, 0, 0, 240);
-      skyGrad.addColorStop(0, '#0284c7');
-      skyGrad.addColorStop(1, '#fed7aa');
+      skyGrad.addColorStop(0, '#2A2A2A');
+      skyGrad.addColorStop(1, '#5a5a5a');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, 640, 240);
 
-      // Sun
-      ctx.fillStyle = '#f97316';
+      // Signal Red sun
+      ctx.fillStyle = '#E10600';
       ctx.beginPath();
       ctx.arc(320, 160, 45, 0, Math.PI * 2);
       ctx.fill();
 
       // Mountains
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = '#1c1c1c';
       ctx.beginPath();
       ctx.moveTo(0, 260);
       ctx.lineTo(160, 100);
       ctx.lineTo(340, 260);
       ctx.fill();
 
-      ctx.fillStyle = '#334155';
+      ctx.fillStyle = '#2A2A2A';
       ctx.beginPath();
       ctx.moveTo(220, 260);
       ctx.lineTo(440, 120);
       ctx.lineTo(640, 260);
       ctx.fill();
 
-      // Lake
-      ctx.fillStyle = '#0f766e';
+      ctx.fillStyle = '#383838';
       ctx.fillRect(0, 260, 640, 100);
     }
 
@@ -700,7 +683,6 @@
     }, 3500);
   }
 
-  // Start app when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

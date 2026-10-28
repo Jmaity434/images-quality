@@ -1,54 +1,65 @@
-# SuperLens AI - Real-Time Image Quality Extender & De-pixelator
+# Super Lens - Real-Time Image Quality Extender & De-pixelator
 
-> **রিয়েল-টাইম ইমেজ কোয়ালিটি এক্সটেন্ডার** - গ্রাহকের আপলোড করা ছবির আসল আসপেক্ট রেশিও হুবহু বজায় রেখে, পিক্সেল মুক্ত আল্ট্রা-শার্প হাই-কোয়ালিটি আউটপুট, রিয়েল-টাইম জুম/প্যান এবং বিফোর-আফটার কম্প্যারিজম প্রিভিউ সহ পছন্দের ফরম্যাটে (PNG, JPG, WEBP) ডাউনলোডের সম্পূর্ণ ক্লায়েন্ট-সাইড ওয়েব অ্যাপ্লিকেশন।
+Super Lens is a high-performance, real-time image quality extender and super-resolution web application. It runs 100% client-side in the browser via hardware-accelerated WebGL fragment shaders, eliminating blocky pixelation and jagged staircase artifacts while preserving the exact aspect ratio of any uploaded image.
 
-🌐 **লাইভ ডেমো (Live GitHub Pages)**: [https://jmaity434.github.io/images-quality/](https://jmaity434.github.io/images-quality/)
-
----
-
-## 🌟 প্রধান বৈশিষ্ট্যসমূহ (Key Features)
-
-1. **রিয়েল-টাইম কোয়ালিটি এক্সটেন্ডার স্লাইডার (Real-Time Quality Extender Slider)**:
-   - লো (Low/Raw) থেকে আল্ট্রা হাই (Ultra HD) স্লাইডার অ্যাডজাস্টমেন্ট।
-   - জিপিইউ অ্যাক্সিলারেটেড WebGL শেডার ইঞ্জিনের মাধ্যমে কোনো পিক্সেল ছাড়াই নিখুঁত মসৃণ ছবি (Anti-aliasing, Bilateral De-pixelation & Adaptive Sharpening)।
-
-2. **আসল আসপেক্ট রেশিও সংরক্ষণ (Strict Aspect Ratio Preservation)**:
-   - গ্রাহক যেই রেশিওতে ছবি আপলোড করবেন (16:9, 4:3, 1:1, 9:16 ইত্যাদি), পুরো প্রিভিউ ও এক্সপোর্ট সেই আসপেক্ট রেশিওতে নির্ভুলভাবে কাজ করে।
-
-3. **ইন্টারেক্টিভ বিফোর/আফটার প্রিভিউ (Split Before/After Comparison)**:
-   - মাউস বা টাচ দিয়ে টেনে টেনে আসল ছবি (Before) এবং বর্ধিত ছবির (After) পার্থক্য সরাসরি তুলনা করা যায়।
-   - পাশাপাশি (Side-by-Side) এবং কুইক পিক (Hold for Original) মোড সমর্থিত।
-
-4. **স্মুথ রিয়েল-টাইম জুম ও প্যান (Zoom & Pan Engine)**:
-   - মাউস স্ক্রল বা বাটন দিয়ে ১২০০% পর্যন্ত জুম করে সূক্ষ্ম ডিটেইলস পর্যবেক্ষণ করা যায়।
-   - জুম করলেও কোনো ব্লক পিক্সেল দৃশ্যমান হয় না।
-
-5. **গ্রাহকের পছন্দের ফরম্যাটে ডাউনলোড (Custom Format Download)**:
-   - লসলেস **PNG**, কম্প্যাক্ট **JPG**, এবং আধুনিক **WEBP** ফরম্যাট নির্বাচন সুবিধা।
-   - 1× (ক্লিন এনহ্যান্স), 2× HD, এবং 4× Ultra HD স্কেলিং অপশন।
-
-6. **১০০% ক্লায়েন্ট-সাইড ও সুরক্ষিত (Zero Server Upload)**:
-   - কোনো ডাটা সার্ভারে পাঠানো হয় না; গ্রাহকের ব্রাউজারেই সরাসরি প্রসেসিং হয়।
+🌐 **Live GitHub Pages URL**: [https://jmaity434.github.io/images-quality/](https://jmaity434.github.io/images-quality/)
 
 ---
 
-## 🛠️ প্রযুক্তি স্ট্যাক (Tech Stack)
+## 🎨 Color Palette
 
-- **Frontend**: Vanilla HTML5, Modern CSS3 (Glassmorphism & Responsive Layout).
-- **Core Engine**: WebGL Shader Pipeline (GLSL Fragment Shaders) with HTML5 Canvas 2D fallback.
-- **Hosting**: GitHub Pages (Static Web Hosting).
+Designed with an ultra-sleek, precision photographic dark theme:
+- **Charcoal Grey (`#2A2A2A`)**: Primary dark backgrounds and card surfaces.
+- **Moonlit Silver (`#C0C0C0`)**: Borders, sliders, typography, and secondary accents.
+- **Signal Red (`#E10600`)**: Primary brand highlights, active states, and call-to-action buttons.
 
 ---
 
-## 🚀 লোকাল রান করার নিয়ম (Local Run)
+## 🚀 Key Features
 
-কোনো জটিল ফ্রেমওয়ার্ক বা ইনস্টলেশন ছাড়াই সরাসরি ব্রাউজারে চলবে:
+1. **Continuous 16-Tap Bicubic & Anti-Aliased Engine**:
+   - Uses 16-tap Catmull-Rom bicubic spline resampling across raw pixel pitch (`1.0 / u_srcResolution`) to physically eliminate pixel grids.
+   - Bilateral smoothing and directional edge anti-aliasing transform pixelated staircases into clean, smooth, vector-like contours.
+
+2. **Real-Time Quality Extender Slider**:
+   - Master slider smoothly adjusts from Low (Raw Original) to High (Ultra HD) at 60 FPS.
+   - Fine-tuning controls for De-pixelation, Edge Definition, Micro-Contrast, Noise Suppression, and Vibrancy.
+
+3. **Strict Aspect Ratio Preservation**:
+   - The user's uploaded aspect ratio (e.g., 16:9, 4:3, 1:1, 9:16) is strictly maintained across preview stages and high-resolution exports.
+
+4. **Synchronized Zoom & Pan (Up to 1200%)**:
+   - Mouse wheel and touch pinch-to-zoom to scrutinize fine details.
+   - Even when zoomed in deep, the enhanced output remains silky-smooth with zero pixel blocks.
+
+5. **Interactive Before/After Comparison**:
+   - Interactive split-screen slider with draggable curtain.
+   - Side-by-side mode and instant "Hold for Original" peek view.
+
+6. **Multi-Format Export Including RAW**:
+   - **PNG**: Lossless web standard.
+   - **JPG / JPEG**: Compact with adjustable compression quality.
+   - **WEBP**: Next-generation web format.
+   - **RAW (TIFF)**: Uncompressed 32-bit RGBA TIFF 6.0 master raster container for Photoshop and Lightroom.
+   - Upscale factors: 1× (Clean Denoise), 2× HD, 4× Ultra HD.
+
+---
+
+## 💻 Tech Stack
+
+- **Framework**: Tailwind CSS & HTML5.
+- **Rendering Engine**: WebGL 1.0/2.0 with custom GLSL continuous bicubic fragment shaders.
+- **Hosting**: GitHub Pages (Static, zero server overhead).
+
+---
+
+## 🔧 Running Locally
 
 ```bash
-# Python দিয়ে লোকাল সার্ভার চালানো:
+# Python 3
 python -m http.server 8000
 
-# অথবা Node.js npx serve:
+# or Node.js npx
 npx serve .
 ```
-ব্রাউজারে খুলুন: `http://localhost:8000`
+Open [http://localhost:8000](http://localhost:8000) in your browser.
