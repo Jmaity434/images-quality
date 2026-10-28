@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Real-Time Image Quality Extender | ইমেজ কোয়ালিটি এনহ্যান্সার</title>
+  <meta name="description" content="রিয়েল-টাইম ইমেজ কোয়ালিটি এক্সটেন্ডার - জুম, বিফোর-আফটার কম্প্যারিজম, কোনো পিক্সেল ছাড়াই নিখুঁত ছবি এনহ্যান্সমেন্ট ও হাই-কোয়ালিটি ডাউনলোড।">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">SuperLens <span>AI Extender</span></h1>
+        <p class="brand-subtitle">Real-Time Image Quality Extender & De-pixelator</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="badge live-badge">
+        <span class="pulse-dot"></span>
+        <span>Real-Time Engine</span>
+      </div>
+      <button id="resetAppBtn" class="btn-ghost" title="রিসেট করুন / নতুন ছবি আপলোড করুন">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span>নতুন ছবি</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <!-- Main Viewport Area (Comparison + Zoom/Pan) -->
+    <section class="viewport-section">
+      <!-- Upload Dropzone (shown when no image is loaded) -->
+      <div id="dropZone" class="dropzone-card">
+        <div class="dropzone-content">
+          <div class="upload-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2>এখানে আপনার ছবি ড্রপ করুন অথবা সিলেক্ট করুন</h2>
+          <p class="dropzone-desc">যেকোনো রেশিও ও সাইজের ছবি আপলোড করুন (JPG, PNG, WebP, BMP)। আসল রেশিও বজায় থাকবে।</p>
+          
+          <label class="btn-primary upload-btn" for="fileInput">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>ছবি বেছে নিন (Choose Image)</span>
+          </label>
+          <input type="file" id="fileInput" accept="image/*" style="display: none;">
+
+          <!-- Quick Samples -->
+          <div class="sample-images-bar">
+            <span>অথবা স্যাম্পল ট্রাই করুন:</span>
+            <div class="sample-chips">
+              <button class="sample-chip" data-sample="pixelart" type="button">🎮 লো-রেজ পিক্সেলেটেড</button>
+              <button class="sample-chip" data-sample="portrait" type="button">👤 ব্লারি পোর্ট্রেট</button>
+              <button class="sample-chip" data-sample="nature" type="button">🏔️ ল্যান্ডস্কেপ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Viewer Workspace (hidden until image loaded) -->
+      <div id="viewerWorkspace" class="viewer-workspace hidden">
+        <!-- Floating Viewer Toolbar -->
+        <div class="viewer-toolbar">
+          <div class="toolbar-group">
+            <div class="view-mode-selector">
+              <button id="splitModeBtn" class="view-btn active" title="স্প্লিট স্লাইডার ভিউ (Split Slider)">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                <span>স্প্লিট ভিউ</span>
+              </button>
+              <button id="sideModeBtn" class="view-btn" title="পাশাপাশি ভিউ (Side by Side)">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="3" width="9" height="18" rx="1"/><rect x="13" y="3" width="9" height="18" rx="1"/></svg>
+                <span>পাশাপাশি</span>
+              </button>
+              <button id="holdOriginalBtn" class="view-btn" title="চেপে ধরে অরিজিনাল দেখুন (Hold for Original)">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>আসল ছবি দেখুন</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zoom & Pan Controls -->
+          <div class="toolbar-group zoom-group">
+            <button id="zoomOutBtn" class="tool-btn" title="জুম আউট (-)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <span id="zoomLevelDisplay" class="zoom-value" title="রিয়েল-টাইম জুম লেভেল">100%</span>
+            <button id="zoomInBtn" class="tool-btn" title="জুম ইন (+)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button id="zoomFitBtn" class="tool-btn" title="স্ক্রিনের সাথে ফিট করুন (Fit)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </button>
+            <button id="zoom100Btn" class="tool-btn" title="১০০% আসল সাইজ (1:1 Pixel)">
+              1:1
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Interactive Stage Container -->
+        <div id="stageContainer" class="stage-container" tabindex="0">
+          <div id="viewportTransform" class="viewport-transform">
+            
+            <!-- Split View Mode Wrapper -->
+            <div id="splitStage" class="comparison-stage">
+              <!-- Before (Original) Canvas -->
+              <div class="canvas-layer before-layer">
+                <canvas id="beforeCanvas"></canvas>
+                <div class="layer-tag tag-before">
+                  <span class="tag-dot"></span>
+                  <span>আগে (Before / Original)</span>
+                </div>
+              </div>
+
+              <!-- After (Enhanced Extender) Canvas (Clipped by slider) -->
+              <div id="afterClipper" class="canvas-layer after-layer">
+                <canvas id="afterCanvas"></canvas>
+                <div class="layer-tag tag-after">
+                  <span class="tag-dot enhanced"></span>
+                  <span>পরে (Enhanced Extender ✨)</span>
+                </div>
+              </div>
+
+              <!-- Interactive Split Handle Divider -->
+              <div id="sliderHandle" class="slider-divider" style="left: 50%;">
+                <div class="divider-line"></div>
+                <div class="divider-knob">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/><polyline points="9 18 3 12 9 6"/></svg>
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/><polyline points="15 18 21 12 15 6"/></svg>
+                </div>
+                <div class="divider-line"></div>
+              </div>
+            </div>
+
+            <!-- Side-by-Side Mode Wrapper (Hidden by default) -->
+            <div id="sideStage" class="side-stage hidden">
+              <div class="side-box">
+                <div class="side-tag tag-before">আগে (Before / Original)</div>
+                <canvas id="sideBeforeCanvas"></canvas>
+              </div>
+              <div class="side-box">
+                <div class="side-tag tag-after">পরে (Enhanced Extender ✨)</div>
+                <canvas id="sideAfterCanvas"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom hint overlay -->
+          <div class="interaction-hint">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>মাউস স্ক্রল দিয়ে জুম করুন, ড্র্যাগ করে প্যান করুন • স্লাইডার টেনে বিফোর/আফটার পার্থক্য দেখুন</span>
+          </div>
+        </div>
+
+        <!-- Image Info Strip -->
+        <div class="image-meta-bar">
+          <div class="meta-item">
+            <span class="meta-label">রেশিও (Aspect Ratio):</span>
+            <span id="metaRatio" class="meta-value badge-ratio">16:9</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">আসল সাইজ (Original):</span>
+            <span id="metaOrigDims" class="meta-value">0 × 0 px</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">এনহ্যান্সড সাইজ (Enhanced):</span>
+            <span id="metaTargetDims" class="meta-value highlight">0 × 0 px</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">পিক্সেল স্মুথনেস:</span>
+            <span id="metaSmoothness" class="meta-value text-success">আল্ট্রা ক্রিস্প (100% No Pixels)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar Controls -->
+    <aside class="controls-sidebar">
+      <div class="sidebar-inner">
+        
+        <!-- Section: Primary Extender Slider -->
+        <div class="control-card primary-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="sparkle-icon">✨</span>
+              <h3>কোয়ালিটি এক্সটেন্ডার (Quality Extender)</h3>
+            </div>
+            <span id="qualityPercentBadge" class="quality-badge">85%</span>
+          </div>
+          <p class="card-caption">লো (Low) থেকে হাই (Ultra High) কোয়ালিটি স্লাইডার রিয়েল-টাইমে অ্যাডজাস্ট করুন। পিক্সেল সম্পূর্ণ অদৃশ্য হয়ে যাবে।</p>
+          
+          <div class="slider-wrapper">
+            <div class="slider-ticks">
+              <span>Low (মূল)</span>
+              <span>Medium</span>
+              <span>High</span>
+              <span>Ultra HD ✨</span>
+            </div>
+            <input type="range" id="qualityExtenderSlider" min="0" max="100" value="85" class="custom-slider">
+          </div>
+        </div>
+
+        <!-- Section: Resolution Upscaling Factor -->
+        <div class="control-card">
+          <div class="card-header">
+            <h3>রেশিও স্কেলিং (Upscale Factor)</h3>
+            <span class="badge-subtle">রেশিও অপরিবর্তিত থাকবে</span>
+          </div>
+          <p class="card-caption">ছবির আসল অনুপাত (Aspect Ratio) ঠিক রেখে রেজোলিউশন বাড়ান:</p>
+          <div class="scale-selector">
+            <label class="scale-option">
+              <input type="radio" name="upscaleFactor" value="1">
+              <div class="scale-btn">
+                <span class="scale-mult">1×</span>
+                <span class="scale-label">ক্লিন এনহ্যান্স</span>
+              </div>
+            </label>
+            <label class="scale-option">
+              <input type="radio" name="upscaleFactor" value="2" checked>
+              <div class="scale-btn">
+                <span class="scale-mult">2× HD</span>
+                <span class="scale-label">ডাবল রেজোলিউশন</span>
+              </div>
+            </label>
+            <label class="scale-option">
+              <input type="radio" name="upscaleFactor" value="4">
+              <div class="scale-btn">
+                <span class="scale-mult">4× Ultra</span>
+                <span class="scale-label">সুপার শার্প</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section: Fine-Tuning Controls (Collapsible) -->
+        <div class="control-card">
+          <button id="toggleFineTuneBtn" class="collapse-trigger" type="button">
+            <div class="trigger-left">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>অ্যাডভান্সড ফাইন-টিউনিং (Fine Tuning)</span>
+            </div>
+            <svg id="chevronIcon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" class="chevron"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          <div id="fineTunePanel" class="fine-tune-panel hidden">
+            <!-- De-pixel / Smooth -->
+            <div class="sub-slider-item">
+              <div class="sub-slider-head">
+                <span>ডি-পিক্সেল ও অ্যান্টি-অ্যালাইজিং (De-Pixelate)</span>
+                <span id="valDepixel">80%</span>
+              </div>
+              <input type="range" id="sliderDepixel" min="0" max="100" value="80" class="mini-slider">
+            </div>
+
+            <!-- Edge Sharpen -->
+            <div class="sub-slider-item">
+              <div class="sub-slider-head">
+                <span>শার্পনেস ও এজ রিফাইনার (Sharpening)</span>
+                <span id="valSharpen">75%</span>
+              </div>
+              <input type="range" id="sliderSharpen" min="0" max="100" value="75" class="mini-slider">
+            </div>
+
+            <!-- Detail Clarity -->
+            <div class="sub-slider-item">
+              <div class="sub-slider-head">
+                <span>ডিটেইল ক্ল্যারিটি (Detail Clarity)</span>
+                <span id="valClarity">65%</span>
+              </div>
+              <input type="range" id="sliderClarity" min="0" max="100" value="65" class="mini-slider">
+            </div>
+
+            <!-- Denoise Artifact Removal -->
+            <div class="sub-slider-item">
+              <div class="sub-slider-head">
+                <span>নয়েজ ও আর্টিফ্যাক্ট রিমুভাল (Denoise)</span>
+                <span id="valDenoise">70%</span>
+              </div>
+              <input type="range" id="sliderDenoise" min="0" max="100" value="70" class="mini-slider">
+            </div>
+
+            <!-- Color Vibrance -->
+            <div class="sub-slider-item">
+              <div class="sub-slider-head">
+                <span>কালার ভাইব্রেন্স ও কনট্রাস্ট (Color Boost)</span>
+                <span id="valVibrance">30%</span>
+              </div>
+              <input type="range" id="sliderVibrance" min="0" max="100" value="30" class="mini-slider">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Download & Export Format -->
+        <div class="control-card download-card">
+          <div class="card-header">
+            <h3>ডাউনলোড সেটিংস (Download Export)</h3>
+          </div>
+          <p class="card-caption">আপনার পছন্দের ফরম্যাটে ডাউনলোড করুন (রেশিও হুবহু বজায় থাকবে):</p>
+          
+          <div class="format-grid">
+            <label class="format-chip">
+              <input type="radio" name="exportFormat" value="png" checked>
+              <div class="chip-body">
+                <span class="chip-name">PNG</span>
+                <span class="chip-desc">লসলেস ও সুপার ক্লিয়ার</span>
+              </div>
+            </label>
+            <label class="format-chip">
+              <input type="radio" name="exportFormat" value="jpeg">
+              <div class="chip-body">
+                <span class="chip-name">JPG</span>
+                <span class="chip-desc">কম্প্যাক্ট ও ফাস্ট</span>
+              </div>
+            </label>
+            <label class="format-chip">
+              <input type="radio" name="exportFormat" value="webp">
+              <div class="chip-body">
+                <span class="chip-name">WEBP</span>
+                <span class="chip-desc">আধুনিক ওয়েব কোয়ালিটি</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- JPEG/WEBP Quality Slider (visible when JPG/WEBP selected) -->
+          <div id="exportQualityRow" class="sub-slider-item hidden" style="margin-top: 12px;">
+            <div class="sub-slider-head">
+              <span>এক্সপোর্ট কোয়ালিটি (Export Quality)</span>
+              <span id="valExportQuality">98%</span>
+            </div>
+            <input type="range" id="sliderExportQuality" min="60" max="100" value="98" class="mini-slider">
+          </div>
+
+          <!-- Download Action Button -->
+          <button id="downloadBtn" class="btn-download" disabled>
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <div class="btn-text-col">
+              <span class="btn-title">এনহ্যান্সড ছবি ডাউনলোড করুন</span>
+              <span id="downloadBtnSub" class="btn-sub">PNG • 100% আসপেক্ট রেশিও সংরক্ষিত</span>
+            </div>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="enhancer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
