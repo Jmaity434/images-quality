@@ -1,65 +1,73 @@
-# Super Lens - Real-Time Image Quality Extender & De-pixelator
+# Super Lens - Zero-Pixel Image Quality Extender & SVG Vectorizer
 
-Super Lens is a high-performance, real-time image quality extender and super-resolution web application. It runs 100% client-side in the browser via hardware-accelerated WebGL fragment shaders, eliminating blocky pixelation and jagged staircase artifacts while preserving the exact aspect ratio of any uploaded image.
+Super Lens converts low-resolution, blocky pixelated raster images (PNG, JPG, WebP) into infinite-resolution mathematical **SVG vector curves with ZERO pixels**. Whether in the browser or offline via Python, low-resolution pixel grids are eliminated into smooth, continuous vector contours.
 
 🌐 **Live GitHub Pages URL**: [https://jmaity434.github.io/images-quality/](https://jmaity434.github.io/images-quality/)
 
 ---
 
-## 🎨 Color Palette
+## 🎨 Photographic Color Palette
 
-Designed with an ultra-sleek, precision photographic dark theme:
-- **Charcoal Grey (`#2A2A2A`)**: Primary dark backgrounds and card surfaces.
-- **Moonlit Silver (`#C0C0C0`)**: Borders, sliders, typography, and secondary accents.
-- **Signal Red (`#E10600`)**: Primary brand highlights, active states, and call-to-action buttons.
+- **Charcoal Grey (`#2A2A2A`)**: Base surfaces, cards, and darkroom viewports.
+- **Moonlit Silver (`#C0C0C0`)**: Borders, controls, secondary text, and slider tracks.
+- **Signal Red (`#E10600`)**: Primary highlights, active view modes, and key action buttons.
+
+---
+
+## 🌟 How Zero-Pixel Vectorization Works
+
+Raster images store colors as discrete square pixels. When scaled up, traditional interpolation leaves visible stair-stepping and blockiness.
+
+Super Lens applies **Bezier contour vectorization**:
+1. **Bilateral Smoothing**: Suppresses pixel lattice noise while locking semantic edge boundaries.
+2. **Color Layer Quantization**: Groups colors into ordered layers.
+3. **Smooth Cubic Bezier Fitting**: Converts jagged pixel staircases into smooth mathematical curves (`M ... C ... Z`).
+4. **Infinite Resolution**: Vectors are mathematical formulas. You can zoom in 100%, 1000%, or 10000%—**zero pixels exist anywhere**.
 
 ---
 
 ## 🚀 Key Features
 
-1. **Continuous 16-Tap Bicubic & Anti-Aliased Engine**:
-   - Uses 16-tap Catmull-Rom bicubic spline resampling across raw pixel pitch (`1.0 / u_srcResolution`) to physically eliminate pixel grids.
-   - Bilateral smoothing and directional edge anti-aliasing transform pixelated staircases into clean, smooth, vector-like contours.
-
+1. **Zero-Pixel SVG Vector Engine (Client-Side & Offline)**:
+   - Built-in in-browser SVG tracer + standalone Python CLI vectorizer script (`vectorize.py`).
 2. **Real-Time Quality Extender Slider**:
-   - Master slider smoothly adjusts from Low (Raw Original) to High (Ultra HD) at 60 FPS.
-   - Fine-tuning controls for De-pixelation, Edge Definition, Micro-Contrast, Noise Suppression, and Vibrancy.
-
-3. **Strict Aspect Ratio Preservation**:
-   - The user's uploaded aspect ratio (e.g., 16:9, 4:3, 1:1, 9:16) is strictly maintained across preview stages and high-resolution exports.
-
-4. **Synchronized Zoom & Pan (Up to 1200%)**:
-   - Mouse wheel and touch pinch-to-zoom to scrutinize fine details.
-   - Even when zoomed in deep, the enhanced output remains silky-smooth with zero pixel blocks.
-
-5. **Interactive Before/After Comparison**:
-   - Interactive split-screen slider with draggable curtain.
-   - Side-by-side mode and instant "Hold for Original" peek view.
-
-6. **Multi-Format Export Including RAW**:
-   - **PNG**: Lossless web standard.
-   - **JPG / JPEG**: Compact with adjustable compression quality.
-   - **WEBP**: Next-generation web format.
-   - **RAW (TIFF)**: Uncompressed 32-bit RGBA TIFF 6.0 master raster container for Photoshop and Lightroom.
-   - Upscale factors: 1× (Clean Denoise), 2× HD, 4× Ultra HD.
+   - Master slider harmonizes curve smoothness, color layers, and edge definition.
+3. **Interactive Split Before / After Curtain**:
+   - Compares raw pixelated image (Before) with the smooth mathematical vector output (After).
+4. **1200% Synchronized Zoom & Pan**:
+   - Mouse wheel and touch pinch-zoom to inspect fine details.
+5. **Strict Aspect Ratio Preservation**:
+   - Uploaded aspect ratios (16:9, 4:3, 1:1, 9:16, custom) remain strictly locked.
+6. **Multi-Format Export**:
+   - **SVG (Vector - 0 Pixels)**: Pure mathematical vector file (scalable to billboard sizes).
+   - **PNG**: Vector-rasterized at 1×, 2× HD, or 4× Ultra HD.
+   - **JPG / JPEG**: Compact web format.
+   - **WEBP**: Next-gen web image.
+   - **RAW (TIFF)**: Uncompressed 32-bit TIFF master.
 
 ---
 
-## 💻 Tech Stack
+## 🐍 Python Vectorizer Script (`vectorize.py`)
 
-- **Framework**: Tailwind CSS & HTML5.
-- **Rendering Engine**: WebGL 1.0/2.0 with custom GLSL continuous bicubic fragment shaders.
-- **Hosting**: GitHub Pages (Static, zero server overhead).
-
----
-
-## 🔧 Running Locally
+Run offline on your PC to convert any image into pure SVG:
 
 ```bash
-# Python 3
+# Basic usage:
+python vectorize.py my_image.png output.svg
+
+# Custom colors & smoothness:
+python vectorize.py my_image.png output.svg --colors 32 --smooth 1.5
+```
+
+---
+
+## 🔧 Running Web App Locally
+
+```bash
+# Python 3:
 python -m http.server 8000
 
-# or Node.js npx
+# or Node.js:
 npx serve .
 ```
-Open [http://localhost:8000](http://localhost:8000) in your browser.
+Visit: [http://localhost:8000](http://localhost:8000)

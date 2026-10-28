@@ -1,7 +1,7 @@
 /**
  * Super Lens - Application Controller
- * Handles image upload, 60 FPS real-time rendering, zoom/pan engine,
- * interactive split preview, and multi-format (PNG, JPG, WEBP, RAW) download.
+ * Handles image upload, in-browser SVG vectorization, zoom/pan inspection engine,
+ * interactive before/after split slider, and multi-format (SVG, PNG, JPG, WEBP, RAW) export.
  */
 
 (function () {
@@ -70,7 +70,8 @@
   // --- Engine & State ---
   const enhancer = new ImageEnhancerEngine();
   let currentImage = null;
-  let currentFileName = 'super-lens-image';
+  let currentFileName = 'super-lens-vector';
+  let currentSvgString = null;
 
   // Zoom & Pan state
   let zoom = 1;
@@ -85,13 +86,13 @@
   let isDraggingSlider = false;
   let viewMode = 'split'; // 'split' | 'side'
 
-  // Upscale & Export state
+  // Upscale & Export state (SVG is default for ZERO PIXELS)
   let upscaleFactor = 2;
-  let exportFormat = 'png';
+  let exportFormat = 'svg';
   let exportQuality = 0.98;
 
-  // Render loop control
-  let renderPending = false;
+  // Render throttle
+  let renderDebounceTimer = null;
 
   function init() {
     setupUploadHandlers();
@@ -140,6 +141,7 @@
 
     resetAppBtn.addEventListener('click', () => {
       currentImage = null;
+      currentSvgString = null;
       fileInput.value = '';
       dropZone.classList.remove('hidden');
       viewerWorkspace.classList.add('hidden');
@@ -167,12 +169,12 @@
     const origW = img.naturalWidth || img.width;
     const origH = img.naturalHeight || img.height;
 
-    // Calculate Aspect Ratio
+    // Strict Aspect Ratio Preservation
     const ratioString = ImageEnhancerEngine.getAspectRatio(origW, origH);
     metaRatio.textContent = ratioString;
     metaOrigDims.textContent = `${origW} × ${origH} px`;
 
-    // Render Raw Original to "Before" Canvas (No smoothing, clearly showing original pixels)
+    // Render Raw Original to "Before" Canvas (No smoothing, showing original block pixels)
     beforeCanvas.width = origW;
     beforeCanvas.height = origH;
     const beforeCtx = beforeCanvas.getContext('2d');
@@ -192,25 +194,22 @@
     viewerWorkspace.classList.remove('hidden');
     downloadBtn.disabled = false;
 
-    // Reset zoom and fit to stage
     fitImageToScreen();
-    requestEnhanceRender();
+    requestVectorRender();
     showToast(`Image loaded: ${origW}×${origH} px (${ratioString})`);
   }
 
   // =========================================================================
-  // 2. Real-Time Super-Resolution Render Pipeline
+  // 2. Real-Time Vector Render Engine (Zero Pixels)
   // =========================================================================
-  function requestEnhanceRender() {
-    if (renderPending) return;
-    renderPending = true;
-    requestAnimationFrame(() => {
-      renderPending = false;
+  function requestVectorRender() {
+    if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+    renderDebounceTimer = setTimeout(() => {
       renderEnhancedImage();
-    });
+    }, 40);
   }
 
-  function renderEnhancedImage() {
+  async function renderEnhancedImage() {
     if (!currentImage) return;
 
     const params = {
@@ -222,20 +221,26 @@
       upscaleFactor: upscaleFactor
     };
 
-    enhancer.renderToCanvas(afterCanvas, params);
+    currentSvgString = await enhancer.vectorizeToSVG(params);
+    await enhancer.renderToCanvas(afterCanvas, params);
 
     if (viewMode === 'side') {
-      enhancer.renderToCanvas(sideAfterCanvas, params);
+      await enhancer.renderToCanvas(sideAfterCanvas, params);
     }
 
     const origW = currentImage.naturalWidth || currentImage.width;
     const origH = currentImage.naturalHeight || currentImage.height;
     const targetW = Math.round(origW * upscaleFactor);
     const targetH = Math.round(origH * upscaleFactor);
-    metaTargetDims.textContent = `${targetW} × ${targetH} px (${upscaleFactor}× HD)`;
 
-    const extName = exportFormat === 'raw' ? 'RAW (TIFF)' : exportFormat.toUpperCase();
-    downloadBtnSub.textContent = `${extName} • ${targetW}×${targetH} px • 100% Aspect Ratio Preserved`;
+    if (exportFormat === 'svg') {
+      metaTargetDims.textContent = 'Infinite Vector (0 Pixels)';
+      downloadBtnSub.textContent = 'SVG Vector • Mathematical Curves • 0 Pixels';
+    } else {
+      metaTargetDims.textContent = `${targetW} × ${targetH} px (${upscaleFactor}× HD)`;
+      const extName = exportFormat === 'raw' ? 'RAW (TIFF)' : exportFormat.toUpperCase();
+      downloadBtnSub.textContent = `${extName} • Vector-Rasterized • ${targetW}×${targetH} px`;
+    }
   }
 
   // =========================================================================
@@ -283,7 +288,7 @@
   }
 
   // =========================================================================
-  // 4. Real-time Zoom & Pan Engine (Inspect Before/After without Pixels)
+  // 4. Real-time Zoom & Pan Engine (Inspect Vector Detail with Zero Pixels)
   // =========================================================================
   function setupZoomAndPan() {
     function applyTransform() {
@@ -335,7 +340,7 @@
       }
     });
 
-    // Touch controls
+    // Touch support
     let initialTouchDist = null;
     let initialTouchZoom = zoom;
 
@@ -348,7 +353,7 @@
       } else if (e.touches.length === 2) {
         isPanning = false;
         initialTouchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientX - e.touches[0].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
         initialTouchZoom = zoom;
@@ -426,7 +431,7 @@
       splitModeBtn.classList.remove('active');
       splitStage.classList.add('hidden');
       sideStage.classList.remove('hidden');
-      requestEnhanceRender();
+      requestVectorRender();
     });
 
     function showOriginal() {
@@ -443,7 +448,7 @@
   }
 
   // =========================================================================
-  // 6. Quality Sliders & Harmonization for Zero-Pixel Output
+  // 6. Quality Sliders & Harmonization for Zero-Pixel Vector Output
   // =========================================================================
   function setupQualitySliders() {
     qualityExtenderSlider.addEventListener('input', (e) => {
@@ -451,36 +456,35 @@
       qualityPercentBadge.textContent = `${val}%`;
 
       const t = val / 100;
-      // High baseline de-pixelation to ensure no pixelation remains
-      sliderDepixel.value = Math.round(30 + t * 65);       // 30% to 95%
-      sliderSharpen.value = Math.round(20 + t * 70);       // 20% to 90%
-      sliderClarity.value = Math.round(15 + t * 65);       // 15% to 80%
+      sliderDepixel.value = Math.round(40 + t * 55);       // 40% to 95% curve smoothness
+      sliderClarity.value = Math.round(16 + t * 44);       // 16 to 60 color layers
+      sliderSharpen.value = Math.round(20 + t * 70);       // 20% to 90% edge sharpness
       sliderDenoise.value = Math.round(30 + t * 60);       // 30% to 90%
-      sliderVibrance.value = Math.round(t * 40);           // 0% to 40%
+      sliderVibrance.value = Math.round(t * 40);
 
       updateFineTuneValueDisplays();
-      requestEnhanceRender();
+      requestVectorRender();
     });
 
     const fineSliders = [
-      { el: sliderDepixel, valEl: valDepixel },
-      { el: sliderSharpen, valEl: valSharpen },
-      { el: sliderClarity, valEl: valClarity },
-      { el: sliderDenoise, valEl: valDenoise },
-      { el: sliderVibrance, valEl: valVibrance }
+      { el: sliderDepixel, valEl: valDepixel, suffix: '%' },
+      { el: sliderClarity, valEl: valClarity, suffix: ' Colors' },
+      { el: sliderSharpen, valEl: valSharpen, suffix: '%' },
+      { el: sliderDenoise, valEl: valDenoise, suffix: '%' },
+      { el: sliderVibrance, valEl: valVibrance, suffix: '%' }
     ];
 
-    fineSliders.forEach(({ el, valEl }) => {
+    fineSliders.forEach(({ el, valEl, suffix }) => {
       el.addEventListener('input', () => {
-        valEl.textContent = `${el.value}%`;
-        requestEnhanceRender();
+        valEl.textContent = `${el.value}${suffix}`;
+        requestVectorRender();
       });
     });
 
     function updateFineTuneValueDisplays() {
       valDepixel.textContent = `${sliderDepixel.value}%`;
+      valClarity.textContent = `${sliderClarity.value} Colors`;
       valSharpen.textContent = `${sliderSharpen.value}%`;
-      valClarity.textContent = `${sliderClarity.value}%`;
       valDenoise.textContent = `${sliderDenoise.value}%`;
       valVibrance.textContent = `${sliderVibrance.value}%`;
     }
@@ -494,14 +498,14 @@
       radio.addEventListener('change', (e) => {
         if (e.target.checked) {
           upscaleFactor = parseInt(e.target.value, 10);
-          requestEnhanceRender();
+          requestVectorRender();
         }
       });
     });
   }
 
   // =========================================================================
-  // 7. Download & Export (PNG, JPG, WEBP, and RAW/TIFF)
+  // 7. Download & Export (SVG Vector, PNG, JPG, WEBP, and RAW/TIFF)
   // =========================================================================
   function setupExportHandlers() {
     exportFormatRadios.forEach(radio => {
@@ -513,7 +517,15 @@
           } else {
             exportQualityRow.classList.add('hidden');
           }
-          requestEnhanceRender();
+
+          if (exportFormat === 'svg') {
+            downloadBtn.querySelector('.btn-title').textContent = 'Download Zero-Pixel Vector';
+            downloadBtnSub.textContent = 'SVG Vector • Mathematical Curves • 0 Pixels';
+          } else {
+            downloadBtn.querySelector('.btn-title').textContent = 'Download Enhanced Image';
+            const extName = exportFormat === 'raw' ? 'RAW (TIFF)' : exportFormat.toUpperCase();
+            downloadBtnSub.textContent = `${extName} • Vector-Rasterized • 100% Aspect Ratio`;
+          }
         }
       });
     });
@@ -528,7 +540,7 @@
 
       try {
         downloadBtn.disabled = true;
-        downloadBtn.querySelector('.btn-title').textContent = 'Generating High-Res Export...';
+        downloadBtn.querySelector('.btn-title').textContent = 'Generating Vector Export...';
 
         const exportCanvas = document.createElement('canvas');
         const params = {
@@ -540,30 +552,50 @@
           upscaleFactor: upscaleFactor
         };
 
-        // Render full super-resolution onto export canvas
-        enhancer.renderToCanvas(exportCanvas, params);
+        if (exportFormat === 'svg') {
+          // Direct Pure Vector Download (ZERO PIXELS)
+          const svgData = currentSvgString || await enhancer.vectorizeToSVG(params);
+          const blob = await enhancer.exportImage(null, 'svg', 1.0, svgData);
+          const url = URL.createObjectURL(blob);
 
-        const blob = await enhancer.exportImage(exportCanvas, exportFormat, exportQuality);
-        const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `${currentFileName}-superlens-vector.svg`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
 
-        const link = document.createElement('a');
-        const w = exportCanvas.width;
-        const h = exportCanvas.height;
-        const fileExt = exportFormat === 'raw' ? 'tiff' : exportFormat;
-        link.download = `${currentFileName}-superlens-${w}x${h}.${fileExt}`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          showToast(`Downloaded pure vector SVG: ZERO PIXELS at any zoom!`);
+        } else {
+          // Render vector at ultra-high resolution
+          await enhancer.renderToCanvas(exportCanvas, params);
+          const blob = await enhancer.exportImage(exportCanvas, exportFormat, exportQuality);
+          const url = URL.createObjectURL(blob);
 
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        showToast(`Download ready: ${w}×${h} px (${fileExt.toUpperCase()})`);
+          const link = document.createElement('a');
+          const w = exportCanvas.width;
+          const h = exportCanvas.height;
+          const fileExt = exportFormat === 'raw' ? 'tiff' : exportFormat;
+          link.download = `${currentFileName}-superlens-${w}x${h}.${fileExt}`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          showToast(`Downloaded ${fileExt.toUpperCase()}: ${w}×${h} px`);
+        }
       } catch (err) {
         console.error('Download error:', err);
         showToast('Error generating download. Please try again.');
       } finally {
         downloadBtn.disabled = false;
-        downloadBtn.querySelector('.btn-title').textContent = 'Download Enhanced Image';
+        if (exportFormat === 'svg') {
+          downloadBtn.querySelector('.btn-title').textContent = 'Download Zero-Pixel Vector';
+        } else {
+          downloadBtn.querySelector('.btn-title').textContent = 'Download Enhanced Image';
+        }
       }
     });
   }
@@ -585,13 +617,11 @@
     const ctx = canvas.getContext('2d');
 
     if (type === 'pixelart') {
-      // 160x160 pixel art sprite with severe blockiness
       canvas.width = 160;
       canvas.height = 160;
       ctx.fillStyle = '#2A2A2A';
       ctx.fillRect(0, 0, 160, 160);
 
-      // Character shapes with sharp pixel steps
       ctx.fillStyle = '#E10600';
       ctx.fillRect(40, 40, 80, 80);
       ctx.fillStyle = '#C0C0C0';
@@ -602,7 +632,6 @@
       ctx.fillStyle = '#1c1c1c';
       ctx.fillRect(40, 20, 80, 20);
     } else if (type === 'portrait') {
-      // Portrait gradient (360x480)
       canvas.width = 360;
       canvas.height = 480;
       const grad = ctx.createLinearGradient(0, 0, 360, 480);
@@ -629,7 +658,6 @@
       ctx.arc(180, 205, 25, 0.2 * Math.PI, 0.8 * Math.PI);
       ctx.stroke();
     } else {
-      // Landscape 16:9 (640x360)
       canvas.width = 640;
       canvas.height = 360;
 
@@ -639,13 +667,11 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, 640, 240);
 
-      // Signal Red sun
       ctx.fillStyle = '#E10600';
       ctx.beginPath();
       ctx.arc(320, 160, 45, 0, Math.PI * 2);
       ctx.fill();
 
-      // Mountains
       ctx.fillStyle = '#1c1c1c';
       ctx.beginPath();
       ctx.moveTo(0, 260);
@@ -672,7 +698,7 @@
     img.src = canvas.toDataURL('image/png');
   }
 
-  // --- Toast Notification Helper ---
+  // --- Toast Notification ---
   let toastTimer = null;
   function showToast(message) {
     if (toastTimer) clearTimeout(toastTimer);
